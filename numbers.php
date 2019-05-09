@@ -12,35 +12,27 @@ $api_key=NULL;
 $api_secret=NULL;
 //print_r($request);
 
-if(!(isset( $_GET['api_key']) && isset( $_GET['api_secret'])))
+if(!(isset( $request['api_key']) && isset( $request['api_secret'])))
 {
     echo 'error: you need to pass arguments api_key and api_secret';
 } else {
-    $api_key=$_GET['api_key'];
-    $api_secret=$_GET['api_secret'];
-    if( isset($_GET['country']))
+    $api_key=$request['api_key'];
+    $api_secret=$request['api_secret'];
+    if( isset($request['country']))
     {
-        $country=$_GET['country'];
+        $country=$request['country'];
     }
-    if( isset($_GET['type']))
+    if( isset($request['type']))
     {
-        $type=$_GET['type'];
+        $type=$request['type'];
     }
-    if( isset($_GET['features']))
+    if( isset($request['features']))
     {
-        $features=$_GET['features'];
+        $features=$request['features'];
     }
    $result= In_my_numbers_is_there_a_good_one_available($api_key,$api_secret,$country,$type,$features);
    echo $result;
 }
 
-/*
-$buffer=file_get_contents('php://input');
-$parameters = serialize($request);
 
-
-$fp = fopen("request.txt", 'a');
-fwrite($fp,$buffer);
-fclose($fp);
-*/
 ?>

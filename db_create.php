@@ -2,18 +2,7 @@
 
 require_once('db_functions.php');
 
-/*
-// Name of the file
-$filename = 'nexmops_nicolas.sql';
-// MySQL host
-$mysql_host = 'localhost';
-// MySQL username
-$mysql_username = 'nexmops_nicolas';
-// MySQL password
-$mysql_password = '.V-3G-AK=[90';
-// Database name
-$mysql_database = 'nexmops_nicolas';
-*/
+
 // Connect to MySQL server
 $myconnection = voiceproxy_connect();
 // Select database
@@ -43,7 +32,7 @@ if (substr(trim($line), -1, 1) == ';')
 }
  echo "Tables created successfully<BR>";
 
- 
+
 mysqli_close($myconnection);
 
 

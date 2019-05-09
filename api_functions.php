@@ -35,34 +35,63 @@ function search_available_number($country_code, $number_type)
     return curl_exec($ch);
 }
 
-
-function buy_number()
+function create_application($api_key,$api_secret,$name,$event_url,$answer_url)
 {
-    return 0;
+    $base_url = 'https://api.nexmo.com' ;
+    $version = '/v1';
+    $action = '/applications/?';
+
+//Create an Application for Voice API.
+    $url = $base_url . $version . $action . http_build_query([
+    'api_key' =>  $api_key,
+    'api_secret' => $api_secret,
+    'name' => $name,
+    'type' => 'voice',
+    'answer_url' => $answer_url,
+    'event_url' => $event_url
+]);
+//In this example, answer_url points to a static NCCO that creates a Conference
+//
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array("Accept: application/json", "Content-Length: 0" ));
+curl_setopt($ch, CURLOPT_HEADER, 1);
+$response = curl_exec($ch);
+$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+$header = substr($response, 0, $header_size);
+$body = substr($response, $header_size);
+
+if (strpos($header, '201')){
+    $application = json_decode($body, true);
+    if (! isset ($application['type'])){
+        $result['app_id']=$application['id'];
+        $result['public_key']=$application['keys']['public_key'];
+        $result['private_key']=$application['keys']['private_key'];
+    }else {
+        echo ( "Error: " . $application['type']
+            . " because of " . $application['error_title'] . "\n" );
+    }
+} else {
+    $error = json_decode($body, true);
+    echo("Your request failed because:\n");
+    echo("  " . $error['type'] . "  " . $error['error_title']   );
 }
-
-function create_application()
-{
-    return 0;
+    return json_encode($result);
 }
 
 function update_number($api_key,$api_secret,$app_id,$country,$msisdn)
 {
-
-        echo '- api_key:'.$api_key;
-        echo '- api_secret:'.$api_secret;
-        echo '- app_id:'.$app_id;
-        echo '- country:'.$country;
-        echo '- msisdn:'.$msisdn;
-        
-            $base_url = "https://rest.nexmo.com/number/update?".http_build_query([
-                'api_key' =>  $api_key,
-                'api_secret' => $api_secret,
-                'country' => $country,
-                'msisdn' => $msisdn,
-                'voiceCallbackType' => 'app',
-                'voiceCallbackValue' => $app_id,
-            ]);
+  
+    $base_url = "https://rest.nexmo.com/number/update?".http_build_query([
+        'api_key' =>  $api_key,
+        'api_secret' => $api_secret,
+        'country' => $country,
+        'msisdn' => $msisdn,
+        'voiceCallbackType' => 'app',
+        'voiceCallbackValue' => $app_id
+    ]);
     $header[] = 'Content-type: application/x-www-form-urlencoded';
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $base_url);
@@ -118,11 +147,6 @@ function configure_proxy($country, $msisdn, $app)
     return curl_exec($ch);
 }
 
-// this function create a proxy Voice Application
-function create_proxy()
-{
-    return $application_ID;
-}
 
 
 
@@ -132,16 +156,10 @@ function In_my_numbers_is_there_a_good_one_available($api_key,$api_secret,$count
     $size =100;
     $my_numbers = json_decode(list_owned_number($api_key,$api_secret,1,1));
     $nb_result = $my_numbers->count;
-    //echo 'mon argument features vaut '.$features;
-    //echo 'There is '.$nb_result.' answers availables';
-    //echo ($index*10) < $my_numbers['count'] ;
-    //echo '<pre>';
-
-    //unset ($my_numbers);
 
     for ($index=1; (($index-1)*$size) < $nb_result ;$index=$index+1)
     {
-       // echo 'I am inside the for<pre>';
+
         sleep(1);// without a timer, the second call of list_owned_number return an empty result in my environment
         $my_numbers = json_decode(list_owned_number($api_key,$api_secret,$index,$size));
         $my_good_numbers = array();
@@ -155,10 +173,10 @@ function In_my_numbers_is_there_a_good_one_available($api_key,$api_secret,$count
                 {
                     if(is_null($features))
                     {
-                       // echo 'pas de features';
+                       // no feature specified
                         $my_good_numbers[] = $number;
                     } elseif ($features === 'VOICE' or $features === 'SMS' ){
-                        //echo 'une feature et c est '.$features;
+                        // filter on one feature
                         foreach ($number->features as $features_number)
                         {
                             if($features_number === $features )
@@ -167,51 +185,15 @@ function In_my_numbers_is_there_a_good_one_available($api_key,$api_secret,$count
                             }
                         }
                     } elseif ($features == 'SMS,VOICE'){
-                        //echo 'là j ai 2 features';
+                        // filter with both feature
                         if ($number->features == ["VOICE","SMS"]){
                             $my_good_numbers[] = $number;
                         }
                     }
                 }
             }
-            // is this number from the right type ?
-            // is this number voice enabled ?
-
-            //echo 'I am inside the foreach<pre>';
-            //print_r($number->msisdn);
-            //echo '<pre>';        
         }
-        //echo '<pre>';
     }
-    
-    //echo '<pre><pre>';
-    //print_r($my_good_numbers);
- // we see only the first 10 numbers. Need to manage the index of list_owned_number()
-    $yourJson=json_encode($my_good_numbers);
-    $yourJson = substr($yourJson, 1, strlen($yourJson) - 2);
-    return '{'.$yourJson.'}';
+    return json_encode($my_good_numbers);
+
 }
-/*
-
-if ( isset( $_POST['country_code']) && isset( $_POST['number_type']))
-{
-    echo '<html>';
-    echo '<head><title>Proxy config</title></head>';
-    echo '<body> <form action="./index.php" method="post"> <p>country code <br><input type="text" name="country_code" /></p> <p>type<br><input type="text" name="number_type" /></p> <p>destination<br><input type="text" name="destination" /></p> <p><input type="submit" value=" OK " /></p>';
-    echo '</form></body></html>'; 
-    $resultat = In_my_numbers_is_there_a_good_one_available($_POST['country_code'], $_POST['number_type']);
-    echo $_POST['number_type'];
-    //$resultat = search_available_number($_POST['country_code'], $_POST['number_type']);
-    echo '<pre>';
-    print_r($resultat);
-    echo '</pre>';
-
-
-} else {
-
-    echo '<html>';
-    echo '<head><title>Proxy config</title></head>';
-    echo '<body> <form action="./index.php" method="post"> <p>country code <br><input type="text" name="country_code" /></p> <p>type<br><input type="text" name="number_type" /></p> <p>destination<br><input type="text" name="destination" /></p> <p><input type="submit" value=" OK " /></p>';
-    echo '</form></body></html>'; 
-}
-*/

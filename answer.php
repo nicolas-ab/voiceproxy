@@ -11,39 +11,38 @@ $to=NULL;
 $uuid=NULL;
 
 
-//print_r($request);
 
-
-if(!(isset( $_GET['from']) && isset( $_GET['uuid'])&& isset( $_GET['to'])))
+if(!(isset( $request['from']) && isset( $request['uuid'])&& isset( $request['to'])))
 {
     echo 'error: this ressource needs to be called through the answer callback url of a Nexmo Voice Application';
     exit(0);
 } 
-$from=$_GET['from'];// number calling (customer)
-$to=$_GET['to'];// number called (Nexmo LVN)
-$uuid= $_GET['uuid'];
+$from=$request['from'];// number calling (customer)
+$to=$request['to'];// number called (Nexmo LVN)
+$uuid= $request['uuid'];
 
 $conn=voiceproxy_connect();
-$agent_number=voiceproxy_get_association($conn, $to);
+//to do: voiceproxy_get_association return now 2 elements: driver phone number and customer phone number
 
-//print_r($agent_number);
-if(is_null($agent_number))
-{
-    // means we did not find any agent phone number in the DB configured for this LVN . We gently close the inbound call
+//we get an array with 'driver' and 'customer' key containing the phone numbers
+$array_numbers=voiceproxy_get_association($conn, $to);
+if(is_null($array_numbers))
+{//there is no association configured for this LVN
     $ncco = '[
         {
             "action": "talk",
-            "text": "Sorry, there is no agent configured for this phone number"
+            "text": "Sorry, there is no association configured for the phone number you have dialed"
         }
     ]';
+}
 
-} else {
-    //to do: debugg ncco call without agent, document agent in the DB and test call with agent.
+if($from==$array_numbers['driver'])
+{// if the calling if the driver, we will forward the call to the customer. 
     $ncco = '[
         {   
             "timeout": 20,
             "action": "talk",
-            "text": "Please wait while we connect you."
+            "text": "Please wait while we connect you to your customer."
         },
         {
             "action": "connect",
@@ -52,13 +51,32 @@ if(is_null($agent_number))
             "endpoint": [
                 {
                     "type": "phone",
-                    "number": "'.$agent_number.'"
+                    "number": "'.$array_numbers['customer'].'"
                 }
             ]
         }
     ]';
-
+} else {
+    // Otherwise, it is a customer phone number or an unknown number, we will forward the call to the driver
+    $ncco = '[
+        {   
+            "timeout": 20,
+            "action": "talk",
+            "text": "Please wait while we connect you to your driver."
+        },
+        {
+            "action": "connect",
+            "timeout": 20,
+            "from": "'.$to.'",
+            "endpoint": [
+                {
+                    "type": "phone",
+                    "number": "'.$array_numbers['driver'].'"
+                }
+            ]
+        }
+    ]';
 }
-//http_response_code(200);
+
 header('Content-Type: application/json');
 echo $ncco;

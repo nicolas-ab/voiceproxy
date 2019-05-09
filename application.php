@@ -12,38 +12,63 @@ $api_key=NULL;
 $api_secret=NULL;
 $country=NULL;
 $msisdn=NULL;
-//print_r($request);
+$action=NULL;
+$name=NULL;
+$event_url=NULL;
+$answer_url=NULL;
+
+
 // at first, we won't look for any parameters but the api credentials. When it works, find a way to transform a part of the URI into an argument... 
 
-//print_r($_GET);
-
-if(!(isset( $_GET['api_key']) && isset( $_GET['api_secret'])))
+// todo: the logics belows deserve to be refactored (could be simplier)
+if(!(isset( $request['api_key']) && isset( $request['api_secret'])))
 {   
     // credentials must always here be present. 
     echo 'error: you need to pass arguments api_key and api_secret';
 } else {
-    $api_key=$_GET['api_key'];
-    $api_secret=$_GET['api_secret'];
-    if( isset($_GET['app_id']))
+    $api_key=$request['api_key'];
+    $api_secret=$request['api_secret'];
+    if( isset($request['app_id']))
     {
         // we have an app id, we can be looking for a specific app (getting info or configuring/unconfiguring a number...)
-        $app_id=$_GET['app_id'];
+        $app_id=$request['app_id'];
     }
-    if (! isset($_GET['msisdn'])) {
+    if( isset($request['action']))
+    {
+        // we have an app id, we can be looking for a specific app (getting info or configuring/unconfiguring a number...)
+        $action=$request['action'];
+    }
+    if ($action=='create')
+    {// here, we will create a voice application
+        if (!isset($request['name']) or !isset($request['event_url']) or !isset($request['answer_url']))
+        {
+            echo 'error: you need to pass arguments name , event_url and answer_url';
+
+        }else {
+            $name=$request['name'];
+            $event_url=$request['event_url'];
+            $answer_url=$request['answer_url'];
+            $result=create_application($api_key,$api_secret,$name,$event_url,$answer_url);
+            echo $result;
+        }
+
+        exit(0);
+    }
+    if (! isset($request['msisdn'])) {
     // there is no number, so we are looking to get info on a specific app:
         $result= get_my_apps($api_key,$api_secret,$app_id);
     } else {
         // credential, AP ID, MSISDN are here: this is a configuration or unconfiguration of number on an application
         //first, let's check we have all we need besides MSISDN and app_id (country, msisdn)
 
-        if (!isset($_GET['country']) or !isset($_GET['action']))
+        if (!isset($request['country']) or !isset($request['action']))
         {
             echo 'error: you need to pass arguments country and action';
         }else {
                 // we have all we need
-                $country=$_GET['country'];
-                $msisdn=$_GET['msisdn'];
-                switch($_GET['action']){
+                $country=$request['country'];
+                $msisdn=$request['msisdn'];
+                switch($request['action']){
                     case 'configure':
                         $result=update_number($api_key,$api_secret,$app_id,$country,$msisdn);
                         break;
@@ -55,7 +80,7 @@ if(!(isset( $_GET['api_key']) && isset( $_GET['api_secret'])))
             }
         }
         
-   echo json_encode($result);
+   echo $result;
 }
 
 ?>

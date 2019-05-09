@@ -1,0 +1,7 @@
+RewriteEngine On # Turn on the rewriting engine
+#redirection for numbers (work ok)
+RewriteRule ^numbers/?$ numbers.php [NC,L]
+#redirection for applications (work OK)
+RewriteRule ^application/?$ application.php [NC,L]
+#redirection for association (work OK)
+RewriteRule ^association/?$ association.php [NC,L]
