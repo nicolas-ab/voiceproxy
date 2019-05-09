@@ -13,4 +13,5 @@ Tables created successfully
 If it is not the case, double check the credentials of your sql database and the url documented (variable env) in your Postman Environment
 
 2) usage of the API Calls:
+
 Please refers to the documentation available within the postman collection 
